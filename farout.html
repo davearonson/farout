@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+<meta name="description" content="Dave Aronson's Google Maps API based 'out of
+the way' distance finder; finds how far out of the way one address is, when
+going from one other address to another other address, by using the Google Maps
+API">
+<style comment="yeah it should be external but this is just a demo">
+  .indented {text-indent: .25in}
+  h1 {color: red; text-align: center}
+</style>
+
+<title>Dave Aronson's Google Maps API Address Out-of-the-Way Calculator</title>
+
+<script src="gmaps.js"></script>
+<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=AIzaSyBH-_s_ogzz-XahrkGDwo0F8mzneT6lTag"
+         type="text/javascript"></script>
+<script type="text/javascript">
+
+//<![CDATA[
+
+
+var bp;
+var dir1;
+var dir2;
+var dist1 = null;
+var dist2 = null;
+var ep1;
+var ep2;
+
+
+function ErrDir (id) {
+  var elt = document.getElementById ('ans' + id);
+  if (id == 1) {
+    elt.innerHTML = ep1 + ' to ' + ep2 +
+                    ' directly: Sorry, could not complete!';
+  } else if (id == 2) {
+    elt.innerHTML = ep1 + ' to ' + ep2 + ' via ' + bp +
+                    ': Sorry, could not complete!';
+  }
+}
+
+
+function ErrDir1() { ErrDir (1); }
+function ErrDir2() { ErrDir (2); }
+
+
+function FindDistance()
+{
+  var map1;
+  var map2;
+
+  if (! GBrowserIsCompatible())
+  {
+    alert ('Sorry, your browser is not compatible with the Google Maps API!');
+    return;
+  }
+
+  ep1 = document.getElementById ('endpt1').value;
+  ep2 = document.getElementById ('endpt2').value;
+  if (ep1 == '' || ep2 == '') {
+    alert ('I need to know where your trip starts and ends.');
+    return;
+  }
+
+  bp = document.getElementById ('btwnpt').value;
+  if (bp == '') {
+    alert ('I need to know where you are thinking of stopping along the way.');
+    return;
+  }
+
+  document.getElementById ('diff').innerHTML =
+      '<big>Fetching information from Google....</big>';
+
+  map1 = new GMap2 (document.getElementById ('map1'));
+  dir1 = new GDirections (map1);
+  GEvent.addListener (dir1, 'load', LoadDir1);
+  GEvent.addListener (dir1, 'error', ErrDir1);
+  dir1.load ('from: ' + ep1 + ' to: ' + ep2);
+  map1.addControl (new GLargeMapControl());
+  map1.addControl (new GMapTypeControl());
+
+  map2 = new GMap2 (document.getElementById ('map2'));
+  dir2 = new GDirections (map2);
+  GEvent.addListener (dir2, 'load', LoadDir2);
+  GEvent.addListener (dir2, 'error', ErrDir2);
+  dir2.load ('from: ' + ep1 + ' to: ' + bp + ' to: ' + ep2);
+  map2.addControl (new GLargeMapControl());
+  map2.addControl (new GMapTypeControl());
+  document.getElementById ('ans1').innerHTML = '';
+  document.getElementById ('ans2').innerHTML = '';
+
+} // FindDistance()
+
+
+function LoadDir (id) {
+  if (id == 1) dist1 = dir1.getDistance();
+  else if (id == 2) dist2 = dir2.getDistance();
+  if (dist1 != null && dist2 != null) {
+    document.getElementById ('ans1').innerHTML =
+        ep1 + ' to ' + ep2 + ' directly: ' + dist1.meters / 1000 + ' km';
+    document.getElementById ('ans2').innerHTML =
+        ep1 + ' to ' + ep2 + ' via ' + bp + ': ' + dist2.meters / 1000 + ' km';
+    document.getElementById ('diff').innerHTML =
+        'Difference: ' + (dist2.meters - dist1.meters) / 1000 + ' km';
+  }
+}
+
+
+function LoadDir1() { LoadDir (1); }
+function LoadDir2() { LoadDir (2); }
+
+
+//]]>
+</script>
+</head>
+<body onunload="GUnload()">
+
+<h1>Dave Aronson's Out-of-the-Way Calculator</h1>
+
+<p><hr>
+
+<p>I'm driving from <input id="endpt1" cols="30" type="text"> to
+<input id="endpt2" cols="30" type="text">.  How much further is it if I stop at
+<input id="btwnpt" cols="30" type="text"> on the way?
+
+<p><input id="button" onClick="FindDistance();" type="button" value="Find Distance">
+
+<table align="center">
+  <tr>
+    <td width="400px">
+      <div id="map1" style="width:400px;height:300px"></div>
+    </td>
+    <td width="400px">
+      <div id="map2" style="width:400px;height:300px"></div>
+    </td>
+  </tr>
+  <tr align="center">
+    <td><div id="ans1"></div></td><td><div id="ans2"></div></td>
+  </tr>
+  <tr align="center"><td colspan="2"><div id="diff"></div></td></tr>
+</table>
+
+<p class="indented">This turned out to be pretty trivial, using the Google Maps
+API.  (Especially since Google Maps will interpret such a wide variety of
+format!  You can specify a complete address for maximum accuracy, a street
+alone, a zip code, a city, a state... even a country!)  The only hard part was
+that the documentation wasn't very clear on the necessity of attaching a "load"
+listener to get the distance object.
+
+</body>
+</html>
